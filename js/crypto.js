@@ -3,9 +3,9 @@
 // 키 유도 구조:
 //   PBKDF2-SHA256(정규화된 비밀값, salt, iterations) → 256bit IKM
 //   IKM → HKDF-SHA256 분리:
-//     - 파일 ID : info="SHS1|student-id"  (16바이트 hex, 공개돼도 키 정보 없음)
-//     - AES 키  : info="SHS1|student-key" (AES-256-GCM)
-//   마스터 비밀번호는 별도 salt/반복수 + info="SHS1|roster-key"
+//     - 파일 ID : info="PORTAL1|student-id"  (16바이트 hex, 공개돼도 키 정보 없음)
+//     - AES 키  : info="PORTAL1|student-key" (AES-256-GCM)
+//   마스터 비밀번호는 별도 salt/반복수 + info="PORTAL1|roster-key"
 
 const subtle = globalThis.crypto.subtle;
 
@@ -14,7 +14,7 @@ export const ITER_STUDENT = 310000;
 export const ITER_MASTER = 600000;
 
 // 혼동되기 쉬운 문자(0/O/1/I/L) 제외 31자
-export const CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+export const CODE_CHARSET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 export const CODE_LENGTH = 10; // XXXXX-XXXXX
 
 const enc = new TextEncoder();
@@ -63,13 +63,13 @@ export function normalizePassword(s) {
 export function generateCode() {
   // 편향 없는 rejection sampling
   const chars = [];
-  const limit = 256 - (256 % CODE_ALPHABET.length);
+  const limit = 256 - (256 % CODE_CHARSET.length);
   while (chars.length < CODE_LENGTH) {
     const buf = new Uint8Array(CODE_LENGTH * 2);
     globalThis.crypto.getRandomValues(buf);
     for (const b of buf) {
       if (b < limit && chars.length < CODE_LENGTH) {
-        chars.push(CODE_ALPHABET[b % CODE_ALPHABET.length]);
+        chars.push(CODE_CHARSET[b % CODE_CHARSET.length]);
       }
     }
   }
@@ -156,8 +156,8 @@ export async function deriveStudentKeys(code, saltStudentB64, iterations = ITER_
   const norm = normalizeCode(code);
   const ikm = await pbkdf2Bits(norm, saltStudentB64, iterations);
   const hkdf = await hkdfFromBits(ikm);
-  const idBits = await hkdfBits(hkdf, "SHS1|student-id", 16);
-  const aesKey = await hkdfAesKey(hkdf, "SHS1|student-key");
+  const idBits = await hkdfBits(hkdf, "PORTAL1|student-id", 16);
+  const aesKey = await hkdfAesKey(hkdf, "PORTAL1|student-key");
   return { fileId: hexEncode(idBits), aesKey };
 }
 
@@ -166,7 +166,7 @@ export async function deriveMasterKey(password, saltMasterB64, iterations = ITER
   const norm = normalizePassword(password);
   const ikm = await pbkdf2Bits(norm, saltMasterB64, iterations);
   const hkdf = await hkdfFromBits(ikm);
-  return hkdfAesKey(hkdf, "SHS1|roster-key");
+  return hkdfAesKey(hkdf, "PORTAL1|roster-key");
 }
 
 // ---------- 암호화/복호화 ----------
