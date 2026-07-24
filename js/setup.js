@@ -53,6 +53,7 @@ export function runWizard(mount, { siteURL, onComplete }) {
   const state = {
     password: "",
     teacherName: "",
+    siteTitle: "", // 로그인 화면 제목(브랜드) — 학원 이름과 별개
     academyNames: [""],
     studentNames: {}, // academyIndex -> string
   };
@@ -119,15 +120,18 @@ export function runWizard(mount, { siteURL, onComplete }) {
   // 2) 기본 정보
   function renderStep2() {
     const nameInput = el("input", { type: "text", value: state.teacherName, placeholder: "예) 김과학" });
+    const titleInput = el("input", { type: "text", value: state.siteTitle, placeholder: "예) 알파학원 특강" });
     return el("div", { class: "wizard-step" }, [
       el("h2", { text: "기본 정보" }),
       el("label", { class: "field" }, [el("span", { text: "선생님 이름" }), nameInput]),
+      el("label", { class: "field" }, [el("span", { text: "로그인 화면 제목" }), titleInput]),
       el("p", {
         class: "hint",
-        text: "포털 제목은 다음 단계에서 입력하는 학원 이름으로 자동 설정됩니다 (예: OO학원 학습 포털). 학원 이름은 나중에 관리 페이지 '학생 관리' 탭에서 수정할 수 있습니다.",
+        text: "로그인 화면 제목은 접속 화면에 크게 보이는 이름입니다(예: 알파학원 특강). 로그인 후에는 각 학생의 소속 학원 이름 + ' 학습 포털'로 표시됩니다. 비워 두면 첫 학원 이름으로 자동 설정됩니다. 나중에 관리 페이지에서 바꿀 수 있습니다.",
       }),
       nav(true, "다음 →", () => {
         state.teacherName = nameInput.value.trim();
+        state.siteTitle = titleInput.value.trim();
         step++;
         render();
       }),
@@ -233,9 +237,10 @@ async function buildModel(state, rosters, siteURL) {
     }
   }
 
-  // 포털 제목은 학원 이름 기준 "{학원 이름} 학습 포털" (로그인 전 화면·탭 제목·코드 카드용).
-  // 로그인 후에는 각 학생의 소속 학원 이름으로 표시된다. 나중에 관리 페이지에서 수정 가능.
-  const siteTitle = `${state.academyNames[0]} 학습 포털`;
+  // 로그인 화면 제목(브랜드) — 입력값 우선, 비우면 첫 학원 이름 기준으로 자동 설정.
+  // 학원 이름과 별개이며(로그인 후에는 각 학생의 소속 학원 이름 + " 학습 포털"),
+  // 나중에 관리 페이지에서 수정 가능.
+  const siteTitle = state.siteTitle || `${state.academyNames[0]} 학습 포털`;
   const meta = {
     v: FORMAT_VERSION,
     site: { title: siteTitle },
