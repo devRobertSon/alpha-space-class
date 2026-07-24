@@ -757,15 +757,9 @@ function manageWeeks() {
 }
 
 // ---------- ① 학생 관리 ----------
-// 로그인 전 공개 제목(meta.site.title)을 첫 학원 이름 기준 "{학원 이름} 학습 포털"로 맞춘다.
-// (로그인 후에는 각 학생의 소속 학원 이름으로 표시된다.)
-function syncSiteTitle() {
-  const first = S.roster.academies[0];
-  if (first) S.meta.site.title = `${first.name} 학습 포털`;
-}
-
-// 학원 이름 변경: roster(관리 UI·코드 카드) + 학원 blob(로그인 시 학생/선생님이 보는 이름) 동시 갱신.
+// 학원 이름 변경: roster(관리 UI·코드 카드) + 학원 blob(로그인 후 학생/선생님이 보는 이름) 동시 갱신.
 // 발행 시 학생·선생님 blob의 내장 학원 이름도 roster 기준으로 자동 동기화된다(buildPublishFiles).
+// 로그인 화면 제목(meta.site.title)은 학원 이름과 별개이므로 여기서 건드리지 않는다.
 function renameAcademy(fileId, newName) {
   const entry = academyEntry(fileId);
   if (!entry || entry.name === newName) return;
@@ -776,8 +770,42 @@ function renameAcademy(fileId, newName) {
     blob.name = newName;
     markAcademy(fileId);
   }
-  syncSiteTitle();
   toast(`학원 이름을 "${newName}"(으)로 변경했습니다. '발행'해야 사이트에 반영됩니다.`, "ok");
+}
+
+// 로그인 화면 제목(브랜드) 편집 — meta.site.title. 학원 이름과 무관하게 로그인 전 화면·탭·코드 카드에 표시.
+function brandEditEl() {
+  const input = el("input", {
+    type: "text",
+    value: S.meta.site?.title || "",
+    placeholder: "예) 알파학원 특강",
+    style: "flex:1;min-width:160px",
+  });
+  const save = () => {
+    const v = input.value.trim();
+    if (!v) return toast("로그인 화면 제목을 입력해 주세요.", "error");
+    S.meta.site = S.meta.site || {};
+    if (S.meta.site.title !== v) {
+      S.meta.site.title = v;
+      markRoster();
+      toast("로그인 화면 제목을 변경했습니다. '발행'해야 반영됩니다.", "ok");
+    }
+  };
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") save();
+  });
+  return el("div", { style: "margin-bottom:6px" }, [
+    el("p", {
+      class: "hint",
+      style: "margin:0 0 6px",
+      text: "학생·학부모 로그인(접속) 화면에 크게 보이는 제목입니다. 로그인 후에는 각 학생의 소속 학원 이름 + ' 학습 포털'로 표시됩니다.",
+    }),
+    el("div", { class: "toolbar", style: "align-items:center;flex-wrap:wrap" }, [
+      el("span", { text: "로그인 화면 제목", style: "font-size:13px;color:var(--muted)" }),
+      input,
+      el("button", { class: "btn btn-small", text: "저장", onclick: save }),
+    ]),
+  ]);
 }
 
 // 학원 이름 헤딩 + 인라인 '이름 수정'
@@ -819,37 +847,88 @@ function academyHeadingEl(a) {
 function renderStudentsTab(container) {
   const card = el("div", { class: "card" }, [el("h2", { text: "학생 관리" })]);
 
+  // 로그인 화면 제목(브랜드) — 학원 이름과 별개
+  card.appendChild(brandEditEl());
+
+  const multiAcademy = S.roster.academies.length > 1;
   for (const a of S.roster.academies) {
     card.appendChild(academyHeadingEl(a));
     const students = S.roster.students.filter((s) => s.academyFileId === a.fileId);
     if (!students.length) card.appendChild(el("p", { class: "empty", text: "학생이 없습니다." }));
     for (const st of students) {
+      const actions = [];
+      // 학원(반)이 2개 이상이면 학생별 '학원 이동' 드롭다운 표시
+      if (multiAcademy) {
+        const moveSel = el(
+          "select",
+          { "aria-label": "학원 이동", title: "학원 이동" },
+          S.roster.academies.map((ac) =>
+            el("option", { value: ac.fileId, text: ac.name, selected: ac.fileId === st.academyFileId })
+          )
+        );
+        moveSel.addEventListener("change", () => {
+          st.academyFileId = moveSel.value;
+          markStudent(st.fileId);
+          markRoster();
+          toast(`${st.name} 학생을 이동했습니다. '발행'해야 반영됩니다.`, "ok");
+          renderTab();
+        });
+        actions.push(moveSel);
+      }
+      actions.push(
+        el("button", {
+          class: "btn btn-small",
+          text: "카드 인쇄",
+          onclick: () => printCodeCards([{ name: st.name, code: st.code, academyName: a.name }], S.meta.site.title, S.roster.siteURL),
+        }),
+        el("button", { class: "btn btn-small", text: "코드 재발급", onclick: () => reissueCode(st) }),
+        el("button", {
+          class: "btn btn-small",
+          text: st.active === false ? "활성화" : "비활성",
+          onclick: () => {
+            st.active = st.active === false;
+            markRoster();
+            renderTab();
+          },
+        }),
+        el("button", { class: "btn btn-small btn-danger", text: "삭제", onclick: () => deleteStudent(st) })
+      );
       card.appendChild(
         el("div", { class: `student-row ${st.active === false ? "inactive" : ""}` }, [
           el("span", { class: "s-name", text: st.name }),
           el("span", { class: "code-pill", text: st.code }),
-          el("span", { class: "s-actions" }, [
-            el("button", {
-              class: "btn btn-small",
-              text: "카드 인쇄",
-              onclick: () => printCodeCards([{ name: st.name, code: st.code, academyName: a.name }], S.meta.site.title, S.roster.siteURL),
-            }),
-            el("button", { class: "btn btn-small", text: "코드 재발급", onclick: () => reissueCode(st) }),
-            el("button", {
-              class: "btn btn-small",
-              text: st.active === false ? "활성화" : "비활성",
-              onclick: () => {
-                st.active = st.active === false;
-                markRoster();
-                renderTab();
-              },
-            }),
-            el("button", { class: "btn btn-small btn-danger", text: "삭제", onclick: () => deleteStudent(st) }),
-          ]),
+          el("span", { class: "s-actions" }, actions),
         ])
       );
     }
   }
+  if (multiAcademy) {
+    card.appendChild(
+      el("p", { class: "hint", text: "학생 옆 드롭다운으로 학원(반)을 옮길 수 있습니다. 점수·숙제를 입력하기 전에 옮기는 것을 권장합니다." })
+    );
+  }
+
+  // 학원(반) 추가
+  const acaNameIn = el("input", { type: "text", placeholder: "예) 유전 특강" });
+  const addAcademy = () => {
+    const name = acaNameIn.value.trim();
+    if (!name) return toast("학원(반) 이름을 입력해 주세요.", "error");
+    const entry = { fileId: randomHexId(16), key: randomKeyB64(), name };
+    S.roster.academies.push(entry);
+    S.academies.set(entry.fileId, emptyAcademyBlob(name));
+    markAcademy(entry.fileId);
+    markRoster();
+    toast(`"${name}" 학원을 추가했습니다. 학생 추가·이동에서 선택하세요. '발행'해야 반영됩니다.`, "ok");
+    renderTab();
+  };
+  acaNameIn.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addAcademy();
+  });
+  card.appendChild(el("h3", { text: "학원(반) 추가", style: "font-size:15px;margin-top:18px" }));
+  card.appendChild(
+    el("p", { class: "hint", style: "margin:4px 0", text: "학원(반)마다 공지·자료실·반 평균이 분리됩니다. 추가한 뒤 학생 추가/이동에서 선택하세요." })
+  );
+  card.appendChild(el("div", { class: "toolbar" }, [acaNameIn, el("button", { class: "btn btn-primary btn-small", text: "학원 추가", onclick: addAcademy })]));
 
   // 학생 추가
   const nameIn = el("input", { type: "text", placeholder: "학생 이름" });
