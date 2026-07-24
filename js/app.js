@@ -51,7 +51,7 @@ async function init() {
     clear(app).appendChild(
       el("div", { class: "login-wrap" }, [
         el("div", { class: "login-card" }, [
-          el("h1", { text: "천체 수업 학습 포털" }),
+          el("h1", { text: "수업 포털" }),
           el("p", {
             class: "login-sub",
             text: "아직 데이터가 없습니다. 선생님이 관리 페이지(admin.html)에서 초기 설정을 완료하면 이용할 수 있습니다.",
@@ -116,7 +116,7 @@ function renderLogin(errorMsg) {
   clear(app).appendChild(
     el("div", { class: "login-wrap" }, [
       el("div", { class: "login-card" }, [
-        el("h1", { text: meta.site?.title || "천체 수업 학습 포털" }),
+        el("h1", { text: meta.site?.title || "수업 포털" }),
         el("p", { class: "login-sub", text: "안내받은 접속 코드를 입력해 주세요." }),
         el("label", { class: "field" }, [codeInput]),
         el("label", { class: "check" }, [remember, "이 기기에서 자동 로그인"]),
@@ -161,6 +161,7 @@ function logout() {
   clearCode();
   for (const u of blobURLs.splice(0)) URL.revokeObjectURL(u);
   session = null;
+  document.title = meta.site?.title || "수업 포털";
   renderLogin();
 }
 
@@ -181,17 +182,26 @@ function pingVisit(kind) {
 
 // ---------- 대시보드 ----------
 
+// 로그인한 학생/선생님의 소속 반(학원) 이름을 붙여 "{반 이름} 수업 포털"로 표현.
+// 사이트 제목(기본 "수업 포털")을 뒤에 붙이므로 관리자가 제목을 바꾸면 함께 반영된다.
+function classPortalTitle(academyName) {
+  const base = meta.site?.title || "수업 포털";
+  return academyName ? `${academyName} ${base}` : base;
+}
+
 function renderDashboard() {
   const { student, academy } = session;
   const weeks = sortWeeks(academy.weeks);
 
+  document.title = classPortalTitle(academy.name);
+
   const root = el("div", { class: "container" });
 
+  root.appendChild(el("div", { class: "portal-brand", text: classPortalTitle(academy.name) }));
   root.appendChild(
     el("div", { class: "portal-header" }, [
       el("div", { class: "who" }, [
         el("div", { class: "name", text: `${student.name} 학생` }),
-        el("div", { class: "academy", text: academy.name }),
       ]),
       el("button", { class: "btn btn-small", text: "로그아웃", onclick: logout }),
     ])
@@ -657,12 +667,15 @@ function renderTeacherDashboard() {
   const { teacher, academy } = session;
   const weeks = sortWeeks(academy.weeks);
 
+  document.title = classPortalTitle(academy.name);
+
   const root = el("div", { class: "container" });
+  root.appendChild(el("div", { class: "portal-brand", text: classPortalTitle(academy.name) }));
   root.appendChild(
     el("div", { class: "portal-header" }, [
       el("div", { class: "who" }, [
         el("div", { class: "name", text: teacher.name || `${academy.name} 선생님` }),
-        el("div", { class: "academy", text: `${academy.name} · 열람 전용` }),
+        el("div", { class: "academy", text: "열람 전용" }),
       ]),
       el("button", { class: "btn btn-small", text: "로그아웃", onclick: logout }),
     ])

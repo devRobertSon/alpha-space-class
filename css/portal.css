@@ -37,12 +37,21 @@
 }
 
 /* ---------- 대시보드 헤더 ---------- */
+.portal-brand {
+  padding: 14px 0 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
 .portal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 14px 0 6px;
+  padding: 4px 0 6px;
 }
 .portal-header .who {
   min-width: 0;
