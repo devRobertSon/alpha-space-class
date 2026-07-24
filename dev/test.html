@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>암호화 셀프테스트</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 24px auto; padding: 0 16px; }
+    li { margin: 6px 0; }
+    .pass { color: #006300; }
+    .fail { color: #d03b3b; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <h1>암호화 셀프테스트</h1>
+  <p>모든 항목이 <span class="pass">PASS</span>여야 합니다. (https 또는 localhost에서만 동작)</p>
+  <ul id="results"><li>실행 중…</li></ul>
+  <script type="module">
+    import {
+      deriveStudentKeys, deriveMasterKey, encryptJSON, decryptJSON,
+      encryptBytes, decryptBytes, generateCode, normalizeCode,
+      importAesKeyB64, exportAesKeyB64, randomSaltB64, randomKeyB64,
+      b64encode, b64decode, CODE_ALPHABET,
+    } from "../js/crypto.js";
+
+    const results = document.getElementById("results");
+    results.innerHTML = "";
+    let failures = 0;
+
+    async function test(name, fn) {
+      const li = document.createElement("li");
+      try {
+        await fn();
+        li.innerHTML = `<span class="pass">PASS</span> ${name}`;
+      } catch (e) {
+        failures++;
+        li.innerHTML = `<span class="fail">FAIL</span> ${name} — ${e.message}`;
+        console.error(name, e);
+      }
+      results.appendChild(li);
+    }
+    const assert = (cond, msg) => { if (!cond) throw new Error(msg || "assertion failed"); };
+
+    const salt = randomSaltB64();
+    const ITER = 1000; // 테스트는 빠른 반복수로
+
+    await test("JSON 암호화 → 복호화 라운드트립 (한글 포함)", async () => {
+      const { aesKey } = await deriveStudentKeys("ABCDE-FGHJK", salt, ITER);
+      const obj = { name: "김철수", score: 85, memo: "몰 농도 단원 복습 필요 ✏️" };
+      const env = await encryptJSON(aesKey, obj);
+      assert(env.v === 1 && env.iv && env.ct, "봉투 형식");
+      const back = await decryptJSON(aesKey, env);
+      assert(JSON.stringify(back) === JSON.stringify(obj), "내용 불일치");
+    });
+
+    await test("바이너리 암호화 → 복호화 라운드트립", async () => {
+      const key = await importAesKeyB64(randomKeyB64());
+      const bytes = new Uint8Array(70000).map((_, i) => i % 251);
+      const enc = await encryptBytes(key, bytes.buffer);
+      const dec = new Uint8Array(await decryptBytes(key, enc));
+      assert(dec.length === bytes.length, "길이 불일치");
+      for (let i = 0; i < bytes.length; i += 997) assert(dec[i] === bytes[i], `바이트 ${i} 불일치`);
+    });
+
+    await test("동일 코드 → fileId 항상 동일 (결정적)", async () => {
+      const a = await deriveStudentKeys("ABCDE-FGHJK", salt, ITER);
+      const b = await deriveStudentKeys("abcde fghjk", salt, ITER); // 소문자/공백 정규화
+      assert(a.fileId === b.fileId, "fileId 불일치");
+      assert(a.fileId.length === 32, "fileId는 16바이트 hex");
+    });
+
+    await test("다른 코드 → 다른 fileId", async () => {
+      const a = await deriveStudentKeys("ABCDE-FGHJK", salt, ITER);
+      const b = await deriveStudentKeys("ABCDE-FGHJM", salt, ITER);
+      assert(a.fileId !== b.fileId);
+    });
+
+    await test("암호문 변조 시 복호화 실패 (GCM 인증)", async () => {
+      const { aesKey } = await deriveStudentKeys("ABCDE-FGHJK", salt, ITER);
+      const env = await encryptJSON(aesKey, { a: 1 });
+      const ct = b64decode(env.ct);
+      ct[0] ^= 0xff;
+      env.ct = b64encode(ct);
+      let threw = false;
+      try { await decryptJSON(aesKey, env); } catch { threw = true; }
+      assert(threw, "변조가 감지되지 않음");
+    });
+
+    await test("잘못된 키로 복호화 실패", async () => {
+      const { aesKey } = await deriveStudentKeys("ABCDE-FGHJK", salt, ITER);
+      const other = await importAesKeyB64(randomKeyB64());
+      const env = await encryptJSON(aesKey, { a: 1 });
+      let threw = false;
+      try { await decryptJSON(other, env); } catch { threw = true; }
+      assert(threw);
+    });
+
+    await test("마스터 비밀번호 NFC 정규화 (한글 조합형 차이 무시)", async () => {
+      const nfc = "우리학원비밀번호123!".normalize("NFC");
+      const nfd = nfc.normalize("NFD");
+      assert(nfc !== nfd || nfc.length === nfd.length, "");
+      const k1 = await deriveMasterKey(nfc, salt, ITER);
+      const k2 = await deriveMasterKey(nfd, salt, ITER);
+      const env = await encryptJSON(k1, { secret: true });
+      const back = await decryptJSON(k2, env);
+      assert(back.secret === true, "NFC/NFD 키 불일치");
+    });
+
+    await test("코드 생성 형식 (XXXXX-XXXXX, 안전한 문자만)", () => {
+      for (let i = 0; i < 50; i++) {
+        const c = generateCode();
+        assert(/^[A-Z2-9]{5}-[A-Z2-9]{5}$/.test(c), `형식 오류: ${c}`);
+        for (const ch of c.replace("-", "")) assert(CODE_ALPHABET.includes(ch), `금지 문자: ${ch}`);
+      }
+    });
+
+    await test("normalizeCode 다양한 입력", () => {
+      assert(normalizeCode(" abc-de 234 ") === "ABCDE234");
+      assert(normalizeCode("ABCDE-FGHJK") === "ABCDEFGHJK");
+    });
+
+    await test("AES 키 내보내기/가져오기 왕복", async () => {
+      const b64 = randomKeyB64();
+      const key = await importAesKeyB64(b64);
+      const again = await exportAesKeyB64(key);
+      assert(again === b64, "키 직렬화 불일치");
+    });
+
+    const done = document.createElement("li");
+    done.innerHTML = failures === 0
+      ? '<strong class="pass">✔ 전체 통과</strong>'
+      : `<strong class="fail">✘ ${failures}건 실패</strong>`;
+    results.appendChild(done);
+    window.__TEST_DONE__ = { failures };
+  </script>
+</body>
+</html>
