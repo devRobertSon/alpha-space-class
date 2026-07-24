@@ -53,7 +53,7 @@ export function runWizard(mount, { siteURL, onComplete }) {
   const state = {
     password: "",
     teacherName: "",
-    siteTitle: "과학고 대비 학습 포털",
+    siteTitle: "천체 수업 학습 포털",
     academyNames: ["", ""],
     studentNames: {}, // academyIndex -> string
   };
@@ -127,7 +127,7 @@ export function runWizard(mount, { siteURL, onComplete }) {
       el("label", { class: "field" }, [el("span", { text: "사이트 제목" }), titleInput]),
       nav(true, "다음 →", () => {
         state.teacherName = nameInput.value.trim();
-        state.siteTitle = titleInput.value.trim() || "과학고 대비 학습 포털";
+        state.siteTitle = titleInput.value.trim() || "천체 수업 학습 포털";
         step++;
         render();
       }),
