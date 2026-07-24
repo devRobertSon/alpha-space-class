@@ -1,0 +1,31 @@
+{
+ "v": 1,
+ "site": {
+  "title": "수업 포털"
+ },
+ "kdf": {
+  "algo": "PBKDF2-SHA256",
+  "iterStudent": 310000,
+  "iterMaster": 600000
+ },
+ "saltStudent": "Q54L4wwoPBXgnjaMaq7nfQ==",
+ "saltMaster": "qf6xm4hhOPBKa2744wC+YA==",
+ "students": [
+  "c2e8838cec59460bbc9cbab9151f3feb",
+  "3b97d89fde291959193ec52406f81762",
+  "00a8b4f7a2fe3da27ccb547e4d1c7a8b",
+  "6b8b318facd47e1acfd1def6ae8fc693",
+  "7bf8e50b6387d3058ba2409e64a9a16c",
+  "f69b214aae2aa49716f01a2b8f4111b8",
+  "0e9dac0fef20855acf89f0ac2550c96d",
+  "a2742ff7aa24ac97a2fc69e619c483f0",
+  "433449b76b43b82e0c0fb2238b8dc3e0"
+ ],
+ "academies": [
+  "1ad5d9fe2e208164074db96c24b68889"
+ ],
+ "teachers": [
+  "f7c36cf220c2dad24bd387febd870001"
+ ],
+ "publishedAt": "2026-07-24T16:25:32.442Z"
+}
