@@ -2179,10 +2179,13 @@ function renderPublishTab(container) {
     }
   };
 
-  // PAT
-  const savedPAT = localStorage.getItem("shs.pat") || sessionStorage.getItem("shs.pat") || "";
+  // PAT — 저장소별로 분리 저장한다.
+  // 같은 GitHub Pages 오리진(<사용자>.github.io)의 여러 포털이 localStorage를 공유하므로,
+  // 고정 키를 쓰면 다른 저장소 포털과 토큰이 서로 덮어써진다. owner/repo로 키를 나눠 각자 기억.
+  const patStorageKey = () => `shs.pat:${(repo.owner || "").toLowerCase()}/${(repo.name || "").toLowerCase()}`;
+  const savedPAT = localStorage.getItem(patStorageKey()) || sessionStorage.getItem(patStorageKey()) || "";
   const patIn = el("input", { type: "password", value: savedPAT, placeholder: "github_pat_… (Contents 권한)" });
-  const patPersist = el("input", { type: "checkbox", checked: !!localStorage.getItem("shs.pat") });
+  const patPersist = el("input", { type: "checkbox", checked: !!localStorage.getItem(patStorageKey()) });
 
   const log = el("div", { class: "publish-log", text: "" });
   const logLine = (s) => {
@@ -2196,12 +2199,13 @@ function renderPublishTab(container) {
     const token = patIn.value.trim();
     if (!repo.owner || !repo.name) return toast("저장소 정보를 입력해 주세요.", "error");
     if (!token) return toast("PAT(개인 접근 토큰)를 입력해 주세요.", "error");
+    const patKey = patStorageKey();
     if (patPersist.checked) {
-      localStorage.setItem("shs.pat", token);
-      sessionStorage.removeItem("shs.pat");
+      localStorage.setItem(patKey, token);
+      sessionStorage.removeItem(patKey);
     } else {
-      sessionStorage.setItem("shs.pat", token);
-      localStorage.removeItem("shs.pat");
+      sessionStorage.setItem(patKey, token);
+      localStorage.removeItem(patKey);
     }
     publishBtn.disabled = true;
     log.textContent = "";
