@@ -1,0 +1,29 @@
+{
+ "v": 1,
+ "site": {
+  "title": "알파학원 천체 특강 학습 포털"
+ },
+ "kdf": {
+  "algo": "PBKDF2-SHA256",
+  "iterStudent": 310000,
+  "iterMaster": 600000
+ },
+ "saltStudent": "02YALx9N0xf7xms2YEqyIg==",
+ "saltMaster": "V936WrWhJQ3eU1bYLhQ3mQ==",
+ "students": [
+  "f84d1d92c2c1f10f5b4ffc210c57e815",
+  "9d53fec697768bb85241466b25b62764",
+  "6973de684a78810b1e5d771b5537f7ca",
+  "05ca0bf8fbd377555ccf84c6d13d6518",
+  "3f18e6ba6716a10ee94c81a989a5c8dd",
+  "9129bf87b46e99a08da86119d520e85e",
+  "c68641657cc3f96c4847198ef64f93c5",
+  "03e858b9143e24e00dff838ab6b2de8e",
+  "f5535a6031b7b66c1db22ed4577ef862"
+ ],
+ "academies": [
+  "cc2d8c3264abcc094206af5f4b6aac77"
+ ],
+ "teachers": [],
+ "publishedAt": "2026-07-24T17:13:33.355Z"
+}
