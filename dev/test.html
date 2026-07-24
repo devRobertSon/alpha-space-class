@@ -20,7 +20,7 @@
       deriveStudentKeys, deriveMasterKey, encryptJSON, decryptJSON,
       encryptBytes, decryptBytes, generateCode, normalizeCode,
       importAesKeyB64, exportAesKeyB64, randomSaltB64, randomKeyB64,
-      b64encode, b64decode, CODE_ALPHABET,
+      b64encode, b64decode, CODE_CHARSET,
     } from "../js/crypto.js";
 
     const results = document.getElementById("results");
@@ -110,7 +110,7 @@
       for (let i = 0; i < 50; i++) {
         const c = generateCode();
         assert(/^[A-Z2-9]{5}-[A-Z2-9]{5}$/.test(c), `형식 오류: ${c}`);
-        for (const ch of c.replace("-", "")) assert(CODE_ALPHABET.includes(ch), `금지 문자: ${ch}`);
+        for (const ch of c.replace("-", "")) assert(CODE_CHARSET.includes(ch), `금지 문자: ${ch}`);
       }
     });
 

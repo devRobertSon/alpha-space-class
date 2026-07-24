@@ -16,9 +16,13 @@ import {
 import { $, el, clear, toast, copyText, tabBar, setBusy, spinner } from "./ui.js";
 import { renderScoreChart, renderHistogram } from "./chart.js";
 
+// 이 포털(배포 위치)별 localStorage 이름공간 — 같은 github.io 오리진의 다른 포털과
+// 키가 겹치지 않도록 URL 경로로 구분한다.
+const STORE_NS = `portal:${location.host}${location.pathname.replace(/[^/]*$/, "")}`;
+
 // 자동 로그인 체크 → localStorage (탭을 닫아도 유지, 로그아웃 전까지)
 // 미체크 → sessionStorage (새로고침에는 유지, 탭을 닫으면 자동 해제)
-const REMEMBER_KEY = "shs.code";
+const REMEMBER_KEY = `${STORE_NS}:code`;
 const app = $("#app");
 
 function savedCode() {
@@ -170,10 +174,10 @@ function logout() {
 // 릴리스(visit-counter)가 없으면 404가 나지만 no-cors라 화면에는 아무 영향 없음.
 function pingVisit(kind) {
   try {
-    if (sessionStorage.getItem("shs.visit-pinged")) return;
+    if (sessionStorage.getItem(`${STORE_NS}:visit-pinged`)) return;
     const url = visitPingURL(kind);
     if (!url) return; // localhost 등 — 집계하지 않음
-    sessionStorage.setItem("shs.visit-pinged", "1");
+    sessionStorage.setItem(`${STORE_NS}:visit-pinged`, "1");
     fetch(url, { mode: "no-cors", cache: "no-store" }).catch(() => {});
   } catch {
     /* 통계 실패는 무시 */
@@ -254,7 +258,7 @@ function renderDashboard() {
 
 // ---------- 새 소식(배지) 상태 — 기기별 localStorage, 무작위 ID만 저장 ----------
 function seenStoreKey() {
-  return `shs.seen.${session.studentFileId}`;
+  return `${STORE_NS}:seen:${session.studentFileId}`;
 }
 function newsIdSets() {
   const { student, academy } = session;
