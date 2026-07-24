@@ -51,7 +51,7 @@ async function init() {
     clear(app).appendChild(
       el("div", { class: "login-wrap" }, [
         el("div", { class: "login-card" }, [
-          el("h1", { text: "과학고 대비 학습 포털" }),
+          el("h1", { text: "천체 수업 학습 포털" }),
           el("p", {
             class: "login-sub",
             text: "아직 데이터가 없습니다. 선생님이 관리 페이지(admin.html)에서 초기 설정을 완료하면 이용할 수 있습니다.",
@@ -116,7 +116,7 @@ function renderLogin(errorMsg) {
   clear(app).appendChild(
     el("div", { class: "login-wrap" }, [
       el("div", { class: "login-card" }, [
-        el("h1", { text: meta.site?.title || "과학고 대비 학습 포털" }),
+        el("h1", { text: meta.site?.title || "천체 수업 학습 포털" }),
         el("p", { class: "login-sub", text: "안내받은 접속 코드를 입력해 주세요." }),
         el("label", { class: "field" }, [codeInput]),
         el("label", { class: "check" }, [remember, "이 기기에서 자동 로그인"]),

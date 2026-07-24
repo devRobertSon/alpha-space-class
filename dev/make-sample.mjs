@@ -28,7 +28,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dataDir = path.join(root, "data");
 
 const MASTER_PASSWORD = "sample-master-password-123";
-const SITE_TITLE = "과학고 대비 학습 포털 (샘플)";
+const SITE_TITLE = "천체 수업 학습 포털 (샘플)";
 
 // 전부 가상의 인물/학원입니다.
 // quizzes[].scores 는 students 배열과 같은 순서 (null = 미응시)
@@ -184,7 +184,7 @@ async function main() {
           id: randomHexId(6),
           date: "2026-06-20",
           title: "모의고사 일정",
-          body: "6월 마지막 주에 과학고 대비 모의고사를 진행합니다.",
+          body: "6월 마지막 주에 천체 관측 실습을 진행합니다.",
           pinned: false,
         },
       ],
