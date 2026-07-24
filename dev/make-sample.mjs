@@ -28,7 +28,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dataDir = path.join(root, "data");
 
 const MASTER_PASSWORD = "sample-master-password-123";
-const SITE_TITLE = "수업 포털 (샘플)";
+const SITE_TITLE = "한빛학원 학습 포털 (샘플)";
 
 // 전부 가상의 인물/학원입니다.
 // quizzes[].scores 는 students 배열과 같은 순서 (null = 미응시)
