@@ -26,6 +26,10 @@ import { buildZip, downloadBlob } from "./zip.js";
 
 const mount = $("#admin");
 
+// 이 포털(배포 위치)별 localStorage 이름공간 — 같은 github.io 오리진의 다른 포털과
+// 키가 겹치지 않도록 URL 경로로 구분한다. (index.html/admin.html 모두 같은 폴더 → 같은 이름공간)
+const STORE_NS = `portal:${location.host}${location.pathname.replace(/[^/]*$/, "")}`;
+
 // ---------- 인메모리 모델 ----------
 const S = {
   meta: null,
@@ -2179,10 +2183,10 @@ function renderPublishTab(container) {
     }
   };
 
-  // PAT — 저장소별로 분리 저장한다.
-  // 같은 GitHub Pages 오리진(<사용자>.github.io)의 여러 포털이 localStorage를 공유하므로,
-  // 고정 키를 쓰면 다른 저장소 포털과 토큰이 서로 덮어써진다. owner/repo로 키를 나눠 각자 기억.
-  const patStorageKey = () => `shs.pat:${(repo.owner || "").toLowerCase()}/${(repo.name || "").toLowerCase()}`;
+  // PAT — 이 포털 이름공간(STORE_NS)으로 저장한다.
+  // 같은 GitHub Pages 오리진의 여러 포털이 localStorage를 공유하므로, 포털(배포 위치)별로
+  // 키를 나눠 다른 저장소 포털과 토큰이 서로 덮어써지지 않게 한다.
+  const patStorageKey = () => `${STORE_NS}:pat`;
   const savedPAT = localStorage.getItem(patStorageKey()) || sessionStorage.getItem(patStorageKey()) || "";
   const patIn = el("input", { type: "password", value: savedPAT, placeholder: "github_pat_… (Contents 권한)" });
   const patPersist = el("input", { type: "checkbox", checked: !!localStorage.getItem(patStorageKey()) });
@@ -2331,7 +2335,7 @@ function renderPublishTab(container) {
       const t = cnt("visit-teacher.bin");
       let prev = null;
       try {
-        prev = JSON.parse(localStorage.getItem("shs.visitstats"));
+        prev = JSON.parse(localStorage.getItem(`${STORE_NS}:visitstats`));
       } catch {
         /* 무시 */
       }
@@ -2346,7 +2350,7 @@ function renderPublishTab(container) {
       const now = new Date();
       const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       localStorage.setItem(
-        "shs.visitstats",
+        `${STORE_NS}:visitstats`,
         JSON.stringify({ student: s, teacher: t, at: `${toYMD(now)} ${hhmm}` })
       );
     } catch (e) {
