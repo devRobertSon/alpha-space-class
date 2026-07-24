@@ -1,7 +1,7 @@
 {
  "v": 1,
  "site": {
-  "title": "알파학원 특강 학습 포털"
+  "title": "학습 포털"
  },
  "kdf": {
   "algo": "PBKDF2-SHA256",
@@ -27,5 +27,5 @@
  "teachers": [
   "148bc3be61319719771aa1f56a75d7c9"
  ],
- "publishedAt": "2026-07-24T17:50:25.505Z"
+ "publishedAt": "2026-07-24T18:10:33.936Z"
 }
