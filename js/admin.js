@@ -753,11 +753,70 @@ function manageWeeks() {
 }
 
 // ---------- ① 학생 관리 ----------
+// 로그인 전 공개 제목(meta.site.title)을 첫 학원 이름 기준 "{학원 이름} 학습 포털"로 맞춘다.
+// (로그인 후에는 각 학생의 소속 학원 이름으로 표시된다.)
+function syncSiteTitle() {
+  const first = S.roster.academies[0];
+  if (first) S.meta.site.title = `${first.name} 학습 포털`;
+}
+
+// 학원 이름 변경: roster(관리 UI·코드 카드) + 학원 blob(로그인 시 학생/선생님이 보는 이름) 동시 갱신.
+// 발행 시 학생·선생님 blob의 내장 학원 이름도 roster 기준으로 자동 동기화된다(buildPublishFiles).
+function renameAcademy(fileId, newName) {
+  const entry = academyEntry(fileId);
+  if (!entry || entry.name === newName) return;
+  entry.name = newName;
+  markRoster();
+  const blob = S.academies.get(fileId);
+  if (blob) {
+    blob.name = newName;
+    markAcademy(fileId);
+  }
+  syncSiteTitle();
+  toast(`학원 이름을 "${newName}"(으)로 변경했습니다. '발행'해야 사이트에 반영됩니다.`, "ok");
+}
+
+// 학원 이름 헤딩 + 인라인 '이름 수정'
+function academyHeadingEl(a) {
+  const wrap = el("div", {
+    style: "display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap",
+  });
+  const showView = () => {
+    clear(wrap);
+    wrap.appendChild(el("h3", { text: a.name, style: "font-size:15px;margin:0" }));
+    wrap.appendChild(el("button", { class: "btn btn-small", text: "이름 수정", onclick: showEdit }));
+  };
+  const showEdit = () => {
+    clear(wrap);
+    const input = el("input", { type: "text", value: a.name, style: "flex:1;min-width:140px" });
+    const save = () => {
+      const nn = input.value.trim();
+      if (!nn) return toast("학원 이름을 입력해 주세요.", "error");
+      if (nn !== a.name) {
+        renameAcademy(a.fileId, nn);
+        renderTab();
+      } else {
+        showView();
+      }
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") save();
+      else if (e.key === "Escape") showView();
+    });
+    wrap.appendChild(input);
+    wrap.appendChild(el("button", { class: "btn btn-primary btn-small", text: "저장", onclick: save }));
+    wrap.appendChild(el("button", { class: "btn btn-small", text: "취소", onclick: showView }));
+    input.focus();
+  };
+  showView();
+  return wrap;
+}
+
 function renderStudentsTab(container) {
   const card = el("div", { class: "card" }, [el("h2", { text: "학생 관리" })]);
 
   for (const a of S.roster.academies) {
-    card.appendChild(el("h3", { text: a.name, style: "font-size:15px;margin-top:14px" }));
+    card.appendChild(academyHeadingEl(a));
     const students = S.roster.students.filter((s) => s.academyFileId === a.fileId);
     if (!students.length) card.appendChild(el("p", { class: "empty", text: "학생이 없습니다." }));
     for (const st of students) {
